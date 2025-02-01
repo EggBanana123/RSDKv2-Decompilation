@@ -223,6 +223,9 @@ void LoadStageFiles(void) {
 #endif
         ReleaseStageSfx();
         LoadPalette("Data/Palettes/MasterPalette.act", 0, 256);
+#if RETRO_USE_MOD_LOADER
+        Engine.LoadXMLPalettes();
+#endif
         ClearScriptData();
         for (int i = SPRITESHEETS_MAX; i > 0; i--) RemoveGraphicsFile((char *)"", i - 1);
 

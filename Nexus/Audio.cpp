@@ -145,6 +145,10 @@ void LoadGlobalSfx()
         }
 
         CloseFile();
+
+#if RETRO_USE_MOD_LOADER
+        Engine.LoadXMLSoundFX();
+#endif
     }
 
     nextChannelPos = 0;
