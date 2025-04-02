@@ -43,6 +43,31 @@ extern int CollisionBottom;
 
 extern CollisionSensor sensors[6];
 
+#if !RETRO_USE_ORIGINAL_CODE
+#define DEBUG_HITBOX_COUNT (0x400)
+
+struct DebugHitboxInfo {
+    byte type;
+    byte collision;
+    short left;
+    short top;
+    short right;
+    short bottom;
+    int XPos;
+    int YPos;
+    Entity *entity;
+};
+
+
+enum DebugHitboxTypes { H_TYPE_TOUCH, H_TYPE_BOX, H_TYPE_PLAT/*, H_TYPE_FINGER, H_TYPE_HAMMER*/};
+
+extern byte showHitboxes;
+extern int debugHitboxCount;
+extern DebugHitboxInfo debugHitboxList[DEBUG_HITBOX_COUNT];
+
+int AddDebugHitbox(byte type, Entity *entity, int left, int top, int right, int bottom);
+#endif
+
 inline Hitbox *GetPlayerCBox(PlayerScript *script)
 {
     return &PlayerCBoxes[script->animations[PlayerList[PlayerNo].animation].frames[PlayerList[PlayerNo].frame].hitboxID];

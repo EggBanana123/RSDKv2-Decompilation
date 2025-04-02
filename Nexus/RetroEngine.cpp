@@ -142,7 +142,17 @@ bool processEvents() {
                             StageMode             = STAGEMODE_LOAD;
                         }
                         break;
+#if !RETRO_USE_ORIGINAL_CODE
+                    case SDLK_F8:
+                        if (Engine.devMenu)
+                            showHitboxes ^= 2;
+                        break;
 
+                    case SDLK_F9:
+                        if (Engine.devMenu)
+                            showHitboxes ^= 1;
+                        break;
+#endif
 #if RETRO_PLATFORM == RETRO_OSX
                     case SDLK_TAB:
                         if (Engine.devMenu)

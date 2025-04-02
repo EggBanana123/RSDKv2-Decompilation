@@ -367,6 +367,137 @@ void DrawObjectList(int Layer) {
         }
     }
 }
+
+#if !RETRO_USE_ORIGINAL_CODE
+void DrawRectangle(int XPos, int YPos, int width, int height, int R, int G, int B, int A)
+{
+    if (A > 0xFF)
+        A = 0xFF;
+    if (width + XPos > SCREEN_XSIZE)
+        width = SCREEN_XSIZE - XPos;
+    if (XPos < 0) {
+        width += XPos;
+        XPos = 0;
+    }
+
+    if (height + YPos > SCREEN_YSIZE)
+        height = SCREEN_YSIZE - YPos;
+    if (YPos < 0) {
+        height += YPos;
+        YPos = 0;
+    }
+    if (width <= 0 || height <= 0 || A <= 0)
+        return;
+    int pitch              = SCREEN_XSIZE - width;
+    byte *frameBufferPtr   = &Engine.FrameBuffer[XPos + SCREEN_XSIZE * YPos];
+    ushort clr             = PACK_RGB888(R, G, B);
+
+    if (A == 0xFF) {
+        int h = height;
+        while (h--) {
+            int w = width;
+            while (w--) {
+                *frameBufferPtr = clr;
+                ++frameBufferPtr;
+            }
+            frameBufferPtr += pitch;
+        }
+    }
+    else {
+        byte *fbufferBlend = &BlendLookupTable[0x20 * (0xFF - A)];
+        byte *pixelBlend   = &BlendLookupTable[0x20 * A];
+
+        int h = height;
+        while (h--) {
+            int w = width;
+            while (w--) {
+                int R = (fbufferBlend[(*frameBufferPtr & 0xF800) >> 11] + pixelBlend[(clr & 0xF800) >> 11]) << 11;
+                int G = (fbufferBlend[(*frameBufferPtr & 0x7E0) >> 6] + pixelBlend[(clr & 0x7E0) >> 6]) << 6;
+                int B = fbufferBlend[*frameBufferPtr & 0x1F] + pixelBlend[clr & 0x1F];
+
+                *frameBufferPtr = R | G | B;
+                ++frameBufferPtr;
+            }
+            frameBufferPtr += pitch;
+        }
+    }
+}
+
+void DrawDebugOverlays()
+{
+    if (showHitboxes) {
+        for (int i = 0; i < debugHitboxCount; ++i) {
+            DebugHitboxInfo *info = &debugHitboxList[i];
+            int x                 = info->XPos + (info->left << 16);
+            int y                 = info->YPos + (info->top << 16);
+            int w                 = abs((info->XPos + (info->right << 16)) - x) >> 16;
+            int h                 = abs((info->YPos + (info->bottom << 16)) - y) >> 16;
+            x                     = (x >> 16) - XScrollOffset;
+            y                     = (y >> 16) - YScrollOffset;
+
+            switch (info->type) {
+                case H_TYPE_TOUCH:
+                    if (showHitboxes & 1)
+                        DrawRectangle(x, y, w, h, info->collision ? 0x80 : 0xFF, info->collision ? 0x80 : 0x00, 0x00, 0x60);
+                    break;
+
+                case H_TYPE_BOX:
+                    if (showHitboxes & 1) {
+                        DrawRectangle(x, y, w, h, 0x00, 0x00, 0xFF, 0x60);
+                        if (info->collision & 1) // top
+                            DrawRectangle(x, y, w, 1, 0xFF, 0xFF, 0x00, 0xC0);
+                        if (info->collision & 8) // bottom
+                            DrawRectangle(x, y + h, w, 1, 0xFF, 0xFF, 0x00, 0xC0);
+                        if (info->collision & 2) { // left
+                            int sy = y;
+                            int sh = h;
+                            if (info->collision & 1) {
+                                sy++;
+                                sh--;
+                            }
+                            if (info->collision & 8)
+                                sh--;
+                            DrawRectangle(x, sy, 1, sh, 0xFF, 0xFF, 0x00, 0xC0);
+                        }
+                        if (info->collision & 4) { // right
+                            int sy = y;
+                            int sh = h;
+                            if (info->collision & 1) {
+                                sy++;
+                                sh--;
+                            }
+                            if (info->collision & 8)
+                                sh--;
+                            DrawRectangle(x + w, sy, 1, sh, 0xFF, 0xFF, 0x00, 0xC0);
+                        }
+                    }
+                    break;
+
+                case H_TYPE_PLAT:
+                    if (showHitboxes & 1) {
+                        DrawRectangle(x, y, w, h, 0x00, 0xFF, 0x00, 0x60);
+                        if (info->collision & 1) // top
+                            DrawRectangle(x, y, w, 1, 0xFF, 0xFF, 0x00, 0xC0);
+                        if (info->collision & 8) // bottom
+                            DrawRectangle(x, y + h, w, 1, 0xFF, 0xFF, 0x00, 0xC0);
+                    }
+                    break;
+
+//                case H_TYPE_FINGER:
+//                    if (showHitboxes & 2)
+//                        DrawRectangle(x + XScrollOffset, y + YScrollOffset, w, h, 0xF0, 0x00, 0xF0, 0x60);
+//                    break;
+//
+//                case H_TYPE_HAMMER:
+//                    if (showHitboxes & 1)
+//                        DrawRectangle(x, y, w, h, info->collision ? 0xA0 : 0xFF, info->collision ? 0xA0 : 0xFF, 0x00, 0x60);
+//                    break;
+            }
+        }
+    }
+}
+#endif
+
 void DrawStageGfx() {
     DrawObjectList(0);
     if (activeTileLayers[0] < LAYER_COUNT) {
@@ -411,6 +542,10 @@ void DrawStageGfx() {
 
     DrawObjectList(5);
     DrawObjectList(6);
+
+#if !RETRO_USE_ORIGINAL_CODE
+    DrawDebugOverlays();
+#endif
 }
 
 void GenerateBlendTable(ushort alpha, byte type, byte a3, byte a4) {

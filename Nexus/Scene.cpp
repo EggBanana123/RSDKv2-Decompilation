@@ -83,6 +83,10 @@ CollisionMasks TileCollisions[2];
 byte TileGfx[TILESET_SIZE];
 
 void ProcessStage(void) {
+#if !RETRO_USE_ORIGINAL_CODE
+    debugHitboxCount = 0;
+#endif
+
     switch (StageMode) {
         case STAGEMODE_LOAD:
             CameraEnabled = true;
